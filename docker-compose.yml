@@ -20,4 +20,4 @@ services:
 #    volumes:
 #      - ./:/app
 #    command: >
-#      sh -c "mvn clean install && "
+#      sh -c "mvn clean install && mvn exec:java -Dexec.mainClass=".." -Dexec.args="100""

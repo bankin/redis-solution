@@ -5,23 +5,21 @@ import com.google.gson.GsonBuilder;
 import com.solution.consumer.Consumer;
 import io.lettuce.core.RedisClient;
 import io.lettuce.core.RedisURI;
-import io.lettuce.core.Value;
 import io.lettuce.core.XReadArgs;
 import io.lettuce.core.api.reactive.RedisReactiveCommands;
-import io.lettuce.core.pubsub.RedisPubSubListener;
-import io.lettuce.core.pubsub.StatefulRedisPubSubConnection;
-import io.lettuce.core.pubsub.api.reactive.RedisPubSubReactiveCommands;
 import reactor.core.publisher.Flux;
-
-import java.time.Duration;
-import java.util.Objects;
+import reactor.core.publisher.Mono;
 
 import static com.google.gson.FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES;
+import static io.lettuce.core.XGroupCreateArgs.Builder.mkstream;
 
 public class ConsumerMain {
     private static final Gson gson = new GsonBuilder()
             .setFieldNamingPolicy(LOWER_CASE_WITH_UNDERSCORES)
             .create();
+
+    private static final String STREAM_KEY = "messages:backlog";
+    private static final String CONSUMER_GROUP_NAME = "main-consumers";
 
     public static void start() {
         RedisURI uri = RedisURI.Builder
@@ -31,29 +29,19 @@ public class ConsumerMain {
 
         RedisReactiveCommands<String, String> baseReactive = client.connect().reactive();
 
-        StatefulRedisPubSubConnection<String, String> connection = client.connectPubSub();
+        createConsumerGroup(baseReactive)
+            .flatMapMany($ -> Flux.range(1, 10))
+            .flatMap(id ->
+                baseReactive
+                    .xgroupCreateconsumer("messages:backlog", io.lettuce.core.Consumer.from("main-consumers", "main-consumers-" + id))
+                    .doOnNext($ -> new Consumer(gson, baseReactive, "consumer:ids").start()))
+            .subscribe();
+    }
 
-        while (true) {
-            baseReactive.blpop(0, "messages:backlog")
-                .filter(Objects::nonNull)
-                .map(Value::getValue)
-                .flatMap(result -> baseReactive
-                    .xadd("messages:processed", "processed", gson.toJson(result)))
-                .subscribe();
-        }
-
-//        Flux.interval(Duration.ofMillis(10))
-//            .flatMap($ -> baseReactive.blpop(0, "messages:backlog"))
-//            .filter(Objects::nonNull)
-//            .map(Value::getValue)
-//            .flatMap(result -> baseReactive
-//                .xadd("messages:processed", "processed", gson.toJson(result)))
-//            .subscribe();
-//
-//        RedisPubSubListener<String, String> consumer = new Consumer(gson, baseReactive, "consumer:ids");
-//        connection.addListener(consumer);
-//
-//        RedisPubSubReactiveCommands<String, String> pubSubReactive = connection.reactive();
-//        pubSubReactive.subscribe("messages:published").subscribe();
+    private static Mono<String> createConsumerGroup(RedisReactiveCommands<String, String> baseReactive) {
+        return baseReactive.xgroupDestroy(STREAM_KEY, CONSUMER_GROUP_NAME)
+            .flatMap($ ->
+                baseReactive.xgroupCreate(XReadArgs.StreamOffset.latest(STREAM_KEY), CONSUMER_GROUP_NAME, mkstream())
+            );
     }
 }

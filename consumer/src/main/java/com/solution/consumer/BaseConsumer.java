@@ -3,22 +3,16 @@ package com.solution.consumer;
 import com.google.gson.Gson;
 import com.solution.model.Entry;
 import io.lettuce.core.Consumer;
+import io.lettuce.core.StreamMessage;
 import io.lettuce.core.XReadArgs;
 import io.lettuce.core.api.reactive.RedisReactiveCommands;
-import io.lettuce.core.pubsub.RedisPubSubAdapter;
-
-import java.time.Duration;
-import java.util.Random;
-
-import static io.lettuce.core.SetArgs.Builder.nx;
 
 // TODO Generic magic
-abstract class BaseConsumer extends RedisPubSubAdapter<String, String> {
+abstract class BaseConsumer {
     private static int CONSUMER_COUNT = 0;
 
     private final int id;
     private final Gson gson;
-    // FIXME: Integer value type
     private final RedisReactiveCommands<String, String> redisReactiveClient;
     private final String consumerIdsList;
 
@@ -32,36 +26,18 @@ abstract class BaseConsumer extends RedisPubSubAdapter<String, String> {
         this.consumerIdsList = consumerIdsList;
     }
 
-    @Override
-    public void message(String channel, String message) {
-        // FIXME Ack
-        Entry parsed = this.parseJson(message);
-
-//        Entry result = this.handleMessage(parsed);
-//        redisReactiveClient
-//            .xadd("messages:processed", "processed by " + this.id, gson.toJson(result))
-//            .subscribe();
-
-        redisReactiveClient.sadd("parsed:ids", parsed.getMessageId())
-            .filter(res -> res > 0)
-            .map($ -> this.handleMessage(parsed))
-            .flatMap(result -> redisReactiveClient
-                    .xadd("messages:processed", "processed", gson.toJson(result)))
-            .subscribe();
-    }
-
     private Entry parseJson(String message) {
         return gson.fromJson(message, Entry.class);
     }
 
-    @Override
+//    @Override
     public void subscribed(String channel, long count) {
         redisReactiveClient
             .rpush(this.consumerIdsList, "" + this.id)
             .subscribe();
     }
 
-    @Override
+//    @Override
     public void unsubscribed(String channel, long count) {
         redisReactiveClient
             .lrem(this.consumerIdsList, 1, "" + this.id)
@@ -69,4 +45,25 @@ abstract class BaseConsumer extends RedisPubSubAdapter<String, String> {
     }
 
     public abstract Entry handleMessage(Entry message);
+
+    public void start() {
+        redisReactiveClient.xreadgroup(
+                Consumer.from("main-consumers", "main-consumers-" + this.id),
+                    XReadArgs.StreamOffset.lastConsumed("messages:backlog")
+            )
+            .flatMap(message ->
+                redisReactiveClient.xack("messages:backlog", "main-consumers", message.getId())
+                    .map($ -> message))
+            .map(StreamMessage::getBody)
+            .filter(body -> !body.isEmpty() && body.get("message") != null)
+            .map(body -> {
+                Entry entry = this.parseJson(body.get("message"));
+
+                return this.handleMessage(entry);
+            })
+            .flatMap(result -> redisReactiveClient
+                .xadd("messages:processed", "processed", gson.toJson(result)))
+            .repeat()
+            .subscribe();
+    }
 }

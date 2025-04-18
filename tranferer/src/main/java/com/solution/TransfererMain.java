@@ -7,6 +7,8 @@ import io.lettuce.core.pubsub.StatefulRedisPubSubConnection;
 import io.lettuce.core.pubsub.api.reactive.RedisPubSubReactiveCommands;
 
 public class TransfererMain {
+    private static final String STREAM_KEY = "messages:backlog";
+
     public static void start() {
         RedisURI uri = RedisURI.Builder
                 .redis("localhost", 6379)
@@ -20,7 +22,7 @@ public class TransfererMain {
 
         pubSubReactive.subscribe("messages:published").subscribe();
         pubSubReactive.observeChannels()
-            .flatMap(message -> baseReactive.lpush("messages:backlog", message.getMessage()))
+            .flatMap(message -> baseReactive.xadd(STREAM_KEY, "message", message.getMessage()))
             .subscribe();
     }
 }
