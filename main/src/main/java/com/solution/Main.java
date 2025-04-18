@@ -5,7 +5,7 @@ public class Main {
 //        TransfererMain.start();
 
         for (int i = 0; i < 10; i++) {
-////            Thread.ofVirtual().name("" + i).start(() -> new ConsumerMain().start()).start();
+//            Thread.ofVirtual().name("" + i).start(() -> new ConsumerMain().start()).start();
 //            new Thread(() -> new ConsumerMain().start()).start();
             ConsumerMain.start();
         }

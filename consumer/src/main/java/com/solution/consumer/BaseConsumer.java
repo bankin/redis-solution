@@ -42,12 +42,11 @@ abstract class BaseConsumer extends RedisPubSubAdapter<String, String> {
 //            .xadd("messages:processed", "processed by " + this.id, gson.toJson(result))
 //            .subscribe();
 
-        redisReactiveClient.set(parsed.getMessageId(), "" + this.id, nx())
-            .filter(res -> res != null && res.equals("OK"))
+        redisReactiveClient.sadd("parsed:ids", parsed.getMessageId())
+            .filter(res -> res > 0)
             .map($ -> this.handleMessage(parsed))
-            .flatMap(result ->
-                redisReactiveClient
-                        .xadd("messages:processed", result.getMessageId(), gson.toJson(result)))
+            .flatMap(result -> redisReactiveClient
+                    .xadd("messages:processed", "processed", gson.toJson(result)))
             .subscribe();
     }
 
