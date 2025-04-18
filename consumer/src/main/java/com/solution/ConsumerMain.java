@@ -34,14 +34,11 @@ public class ConsumerMain {
         RedisReactiveCommands<String, String> baseReactive = client.connect().reactive();
 
         StatefulRedisPubSubConnection<String, String> connection = client.connectPubSub();
-        for (int i = 0; i < consumerCount; i++) {
-            RedisPubSubListener<String, String> first = new Consumer(gson, baseReactive, "consumer:ids");
-            connection.addListener(first);
-        }
+
+        RedisPubSubListener<String, String> consumer = new Consumer(gson, baseReactive, "consumer:ids");
+        connection.addListener(consumer);
 
         RedisPubSubReactiveCommands<String, String> pubSubReactive = connection.reactive();
         pubSubReactive.subscribe("messages:published").subscribe();
-
-        while (true) {}
     }
 }
