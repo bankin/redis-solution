@@ -24,8 +24,6 @@ public class ConsumerMain {
             .create();
 
     public static void start() {
-        int consumerCount = 2;
-
         RedisURI uri = RedisURI.Builder
                 .redis("localhost", 6379)
                 .build();
@@ -35,10 +33,27 @@ public class ConsumerMain {
 
         StatefulRedisPubSubConnection<String, String> connection = client.connectPubSub();
 
-        RedisPubSubListener<String, String> consumer = new Consumer(gson, baseReactive, "consumer:ids");
-        connection.addListener(consumer);
+        while (true) {
+            baseReactive.blpop(0, "messages:backlog")
+                .filter(Objects::nonNull)
+                .map(Value::getValue)
+                .flatMap(result -> baseReactive
+                    .xadd("messages:processed", "processed", gson.toJson(result)))
+                .subscribe();
+        }
 
-        RedisPubSubReactiveCommands<String, String> pubSubReactive = connection.reactive();
-        pubSubReactive.subscribe("messages:published").subscribe();
+//        Flux.interval(Duration.ofMillis(10))
+//            .flatMap($ -> baseReactive.blpop(0, "messages:backlog"))
+//            .filter(Objects::nonNull)
+//            .map(Value::getValue)
+//            .flatMap(result -> baseReactive
+//                .xadd("messages:processed", "processed", gson.toJson(result)))
+//            .subscribe();
+//
+//        RedisPubSubListener<String, String> consumer = new Consumer(gson, baseReactive, "consumer:ids");
+//        connection.addListener(consumer);
+//
+//        RedisPubSubReactiveCommands<String, String> pubSubReactive = connection.reactive();
+//        pubSubReactive.subscribe("messages:published").subscribe();
     }
 }
