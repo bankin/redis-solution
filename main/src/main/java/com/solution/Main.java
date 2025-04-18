@@ -11,7 +11,7 @@ public class Main {
 
         ConsumerMain.start();
 
-//        MonitoringMain.start();
+        MonitoringMain.start();
 
         while (true) {}
     }
