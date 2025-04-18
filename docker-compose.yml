@@ -1,0 +1,23 @@
+version: '3'
+services:
+  redis:
+    image: redis
+    ports:
+      - "6379:6379"
+
+#  producer:
+#    image: python:3.13.3-slim
+#    volumes:
+#      - ./producer:/producer
+#    command: >
+#      sh -c "pip install redis &&
+#            python /producer/producer.py"
+#    depends_on:
+#      - redis
+
+#  consumer:
+#    image: java...
+#    volumes:
+#      - ./:/app
+#    command: >
+#      sh -c "mvn clean install && "
