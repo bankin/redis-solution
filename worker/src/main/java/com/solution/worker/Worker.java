@@ -1,4 +1,4 @@
-package com.solution.consumer;
+package com.solution.worker;
 
 import com.google.gson.Gson;
 import com.solution.config.WorkerConfig;
@@ -7,10 +7,10 @@ import io.lettuce.core.api.reactive.RedisReactiveCommands;
 
 import java.util.Random;
 
-public class Consumer extends BaseConsumer {
+public class Worker extends BaseWorker {
     private final static Random rand = new Random();
 
-    public Consumer(
+    public Worker(
         Gson gson,
         RedisReactiveCommands<String, String> redisListClient,
         WorkerConfig workerConfig

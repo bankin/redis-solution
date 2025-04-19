@@ -5,7 +5,8 @@ import com.google.gson.GsonBuilder;
 import com.solution.config.ConsumerConfig;
 import com.solution.config.RedisConfig;
 import com.solution.config.WorkerConfig;
-import com.solution.consumer.Consumer;
+import com.solution.worker.Worker;
+import io.lettuce.core.Consumer;
 import io.lettuce.core.RedisClient;
 import io.lettuce.core.RedisURI;
 import io.lettuce.core.XReadArgs;
@@ -16,7 +17,7 @@ import reactor.core.publisher.Mono;
 import static com.google.gson.FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES;
 import static io.lettuce.core.XGroupCreateArgs.Builder.mkstream;
 
-public class ConsumerMain {
+public class WorkerMain {
     private static final Gson gson = new GsonBuilder()
         .setFieldNamingPolicy(LOWER_CASE_WITH_UNDERSCORES)
         .create();
@@ -38,9 +39,9 @@ public class ConsumerMain {
                 baseReactive
                     .xgroupCreateconsumer(
                         workerConfig.messagesBacklogStreamKey(),
-                        io.lettuce.core.Consumer.from(workerConfig.consumerGroupName(), "main-consumers-" + id)
+                        Consumer.from(workerConfig.consumerGroupName(), "main-consumers-" + id)
                     )
-                    .doOnNext($ -> new Consumer(gson, baseReactive, workerConfig).start()))
+                    .doOnNext($ -> new Worker(gson, baseReactive, workerConfig).start()))
             .subscribe();
     }
 

@@ -1,4 +1,4 @@
-package com.solution.consumer;
+package com.solution.worker;
 
 import com.google.gson.Gson;
 import com.solution.config.WorkerConfig;
@@ -8,16 +8,16 @@ import io.lettuce.core.StreamMessage;
 import io.lettuce.core.XReadArgs;
 import io.lettuce.core.api.reactive.RedisReactiveCommands;
 
-// TODO Generic magic
-abstract class BaseConsumer {
+abstract class BaseWorker {
+    // Generate IDs from parent
     private static int CONSUMER_COUNT = 0;
 
-    private final int id;
+    protected final int id;
     private final Gson gson;
     private final RedisReactiveCommands<String, String> redisReactiveClient;
     private final WorkerConfig workerConfig;
 
-    public BaseConsumer(
+    public BaseWorker(
             Gson gson,
             RedisReactiveCommands<String, String> redisReactiveClient,
             WorkerConfig workerConfig) {

@@ -5,7 +5,7 @@ public class Start {
         TransfererMain.start();
         MonitoringMain.start();
 
-        ConsumerMain.start();
+        WorkerMain.start();
 
         while (true) {}
     }
