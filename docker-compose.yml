@@ -5,19 +5,21 @@ services:
     ports:
       - "6379:6379"
 
-#  producer:
-#    image: python:3.13.3-slim
-#    volumes:
-#      - ./producer:/producer
-#    command: >
-#      sh -c "pip install redis &&
-#            python /producer/producer.py"
-#    depends_on:
-#      - redis
+  producer:
+    image: python:3.13.3-slim
+    volumes:
+      - ./producer:/producer
+    command: >
+      sh -c "pip install redis &&
+            python /producer/producer.py"
+    depends_on:
+      - redis
+    environment:
+      REDIS_HOST: "redis"
 
-#  consumer:
-#    image: java...
-#    volumes:
-#      - ./:/app
-#    command: >
-#      sh -c "mvn clean install && mvn exec:java -Dexec.mainClass=".." -Dexec.args="100""
+  consumer:
+    image: maven:3.9-eclipse-temurin-21-alpine
+    volumes:
+      - ./:/app
+    command: >
+      sh -c "cd /app && mvn clean package && java -jar main/target/main-1.0-SNAPSHOT-all.jar"
