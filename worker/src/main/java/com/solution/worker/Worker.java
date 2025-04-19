@@ -16,6 +16,10 @@ public class Worker extends BaseWorker {
         WorkerConfig workerConfig
     ) {
         super(gson, redisListClient, workerConfig);
+
+        redisListClient
+            .rpush(workerConfig.activeConsumersListKey(), "" + super.id)
+            .subscribe();
     }
 
     @Override

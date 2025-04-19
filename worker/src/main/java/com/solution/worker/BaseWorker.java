@@ -32,13 +32,6 @@ abstract class BaseWorker {
     }
 
 //    @Override
-    public void subscribed(String channel, long count) {
-        redisReactiveClient
-            .rpush(this.workerConfig.activeConsumersListKey(), "" + this.id)
-            .subscribe();
-    }
-
-//    @Override
     public void unsubscribed(String channel, long count) {
         redisReactiveClient
             .lrem(this.workerConfig.activeConsumersListKey(), 1, "" + this.id)

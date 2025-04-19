@@ -102,3 +102,5 @@ alive for new "events" and general cryptic errors overall
 - Testing
 - Error handling
 - Configurations
+- Dangling Redis connections
+- Worker Ids

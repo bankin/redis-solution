@@ -1,6 +1,6 @@
-package com.solution;
+package com.solution.monitoring;
 
-import com.solution.config.MonitoringConfig;
+import com.solution.monitoring.config.MonitoringConfig;
 import io.lettuce.core.Range;
 import io.lettuce.core.RedisClient;
 import io.lettuce.core.RedisURI;

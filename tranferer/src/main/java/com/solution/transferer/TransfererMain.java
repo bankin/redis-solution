@@ -1,6 +1,6 @@
-package com.solution;
+package com.solution.transferer;
 
-import com.solution.config.TransfererConfig;
+import com.solution.transferer.config.TransfererConfig;
 import io.lettuce.core.RedisClient;
 import io.lettuce.core.RedisURI;
 import io.lettuce.core.api.reactive.RedisReactiveCommands;
