@@ -25,10 +25,6 @@
     mvn clean package && java -jar main/target/main-1.0-SNAPSHOT-all.jar 
    ```
 
-#### Configuration
-
-You can configure the amount of consumers via .... FIXME
-
 ### Docker
 #### Dependencies
 
@@ -42,14 +38,32 @@ You can configure the amount of consumers via .... FIXME
     docker-compose up
    ```
 
-#### Configuration
+### Configuration
 
-There are environment variables controlling each container. You can edit the
+There are environment variables controlling each component. You can edit the
 docker-compose file or provide environment variables with the following names
 
-- REDIS_HOST - host of redis server
-- REDIS_PORT - port of redis server
-- 
+- `REDIS_HOST` - host of redis server
+  - default: `localhost`
+- `REDIS_PORT` - port of redis server
+  - default: `6379`
+
+- `SOLUTION_PUB_SUB_KEY` - the pub/sub key where messages arrive
+  - default: `messages:published'
+- `SOLUTION_PROCESSED_MESSAGES_STREAM_KEY` - the stream where successfully
+  processed messages are posted
+    - default: `messages:processed`
+- `SOLUTION_CONSUMER_COUNT` - how many consumers to be started
+  - default: `2`
+- `SOLUTION_ACTIVE_CONSUMERS_LIST_KEY` - list where all active consumer ids
+are kept
+  - default: `consumer:ids`
+
+- `BANKIN_MESSAGE_BACKLOG_STREAM_KEY` - where messages from the pub/sub are
+stored for processing
+- `BANKIN_CONSUMER_GROUP_NAME` - the name of the consumer group each consumer
+is added to
+  - default: `main-consumers`
 
 ## Description
 
@@ -57,6 +71,10 @@ The solution relies on Redis Streams and consumer groups. There is a process
 that transfer all messaged from the Pub/Sub topic into a stream. Another
 process registers the consumer group and the consumers inside of it. The 
 consumer group ensures only one consumer will process each message.
+
+By using Streams we're changing the way of communication a bit because we gain 
+the ability to process messages that were published before our consumer was
+started which would not be possible in a pure pub/sub.
 
 ## Notes
 
@@ -78,3 +96,9 @@ messages and registering multiple consumers relatively easy passing the sync
 task back to Redis. I had tons of issues (mostly due to my lack
 of knowledge on how to use it properly) with reading the stream, staying
 alive for new "events" and general cryptic errors overall
+
+## Improvements
+
+- Testing
+- Error handling
+- Configurations

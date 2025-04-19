@@ -23,3 +23,6 @@ services:
       - ./:/app
     command: >
       sh -c "cd /app && mvn clean package && java -jar main/target/main-1.0-SNAPSHOT-all.jar"
+    environment:
+      REDIS_HOST: "redis"
+      SOLUTION_CONSUMER_COUNT: 2

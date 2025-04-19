@@ -1,6 +1,7 @@
 package com.solution.consumer;
 
 import com.google.gson.Gson;
+import com.solution.config.WorkerConfig;
 import com.solution.model.Entry;
 import io.lettuce.core.Consumer;
 import io.lettuce.core.StreamMessage;
@@ -14,16 +15,16 @@ abstract class BaseConsumer {
     private final int id;
     private final Gson gson;
     private final RedisReactiveCommands<String, String> redisReactiveClient;
-    private final String consumerIdsList;
+    private final WorkerConfig workerConfig;
 
     public BaseConsumer(
             Gson gson,
             RedisReactiveCommands<String, String> redisReactiveClient,
-            String consumerIdsList) {
+            WorkerConfig workerConfig) {
         this.id = ++CONSUMER_COUNT;
         this.gson = gson;
         this.redisReactiveClient = redisReactiveClient;
-        this.consumerIdsList = consumerIdsList;
+        this.workerConfig = workerConfig;
     }
 
     private Entry parseJson(String message) {
@@ -33,14 +34,14 @@ abstract class BaseConsumer {
 //    @Override
     public void subscribed(String channel, long count) {
         redisReactiveClient
-            .rpush(this.consumerIdsList, "" + this.id)
+            .rpush(this.workerConfig.activeConsumersListKey(), "" + this.id)
             .subscribe();
     }
 
 //    @Override
     public void unsubscribed(String channel, long count) {
         redisReactiveClient
-            .lrem(this.consumerIdsList, 1, "" + this.id)
+            .lrem(this.workerConfig.activeConsumersListKey(), 1, "" + this.id)
             .subscribe();
     }
 
@@ -48,12 +49,14 @@ abstract class BaseConsumer {
 
     public void start() {
         redisReactiveClient.xreadgroup(
-                Consumer.from("main-consumers", "main-consumers-" + this.id),
-                    XReadArgs.StreamOffset.lastConsumed("messages:backlog")
+                Consumer.from(workerConfig.consumerGroupName(), "main-consumers-" + this.id),
+                    XReadArgs.StreamOffset.lastConsumed(workerConfig.messagesBacklogStreamKey())
             )
             .flatMap(message ->
-                redisReactiveClient.xack("messages:backlog", "main-consumers", message.getId())
-                    .map($ -> message))
+                redisReactiveClient.xack(
+                    workerConfig.messagesBacklogStreamKey(), workerConfig.consumerGroupName(), message.getId()
+                )
+                .map($ -> message))
             .map(StreamMessage::getBody)
             .filter(body -> !body.isEmpty() && body.get("message") != null)
             .map(body -> {
@@ -62,7 +65,7 @@ abstract class BaseConsumer {
                 return this.handleMessage(entry);
             })
             .flatMap(result -> redisReactiveClient
-                .xadd("messages:processed", "processed", gson.toJson(result)))
+                .xadd(workerConfig.processedMessagesStreamKey(), "processed", gson.toJson(result)))
             .repeat()
             .subscribe();
     }
