@@ -41,7 +41,9 @@
 ### Configuration
 
 There are environment variables controlling each component. You can edit the
-docker-compose file or provide environment variables with the following names
+docker-compose file or provide environment variables with the following names.
+There is a `.env` file which you can customise. All envs are present with 
+their defaults in `default.env` for easier setup
 
 - `REDIS_HOST` - host of redis server
   - default: `localhost`
@@ -58,9 +60,13 @@ docker-compose file or provide environment variables with the following names
 - `SOLUTION_ACTIVE_CONSUMERS_LIST_KEY` - list where all active consumer ids
 are kept
   - default: `consumer:ids`
+- `SOLUTION_MONITORING_TIMEOUT_IN_SECONDS` - how often should the monitoring
+report about amount of processed messages per second
+  - default: `3`
 
 - `BANKIN_MESSAGE_BACKLOG_STREAM_KEY` - where messages from the pub/sub are
 stored for processing
+  - default: `messages:backlog`
 - `BANKIN_CONSUMER_GROUP_NAME` - the name of the consumer group each consumer
 is added to
   - default: `main-consumers`
@@ -95,12 +101,11 @@ infinite Flux streams produced a ton a errors above 10-20 consumers
 messages and registering multiple consumers relatively easy passing the sync
 task back to Redis. I had tons of issues (mostly due to my lack
 of knowledge on how to use it properly) with reading the stream, staying
-alive for new "events" and general cryptic errors overall
+alive for new "events" and general errors overall
 
 ## Improvements
 
+- Actually processing ~2x messages with 2x the consumers
 - Testing
 - Error handling
-- Configurations
 - Dangling Redis connections
-- Worker Ids
