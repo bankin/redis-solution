@@ -29,11 +29,12 @@ public class WorkerMain {
         RedisClient client = RedisClient.create(uri);
 
         RedisReactiveCommands<String, String> baseReactive = client.connect().reactive();
+        System.out.printf("Creating %d consumers%n", config.consumerCount());
 
         createConsumerGroup(baseReactive, workerConfig.messagesBacklogStreamKey(), workerConfig.consumerGroupName())
             .flatMapMany($ -> Flux.range(1, config.consumerCount()))
-            .map(id -> new Worker(id, gson, baseReactive, workerConfig))
-            .map(worker -> Thread.ofVirtual().start(worker::start))
+            .doOnNext(id -> new Worker(id, gson, baseReactive, workerConfig).start())
+//            .map(worker -> Thread.ofVirtual().start(worker::start))
             .subscribe();
     }
 

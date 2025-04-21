@@ -8,6 +8,8 @@ import io.lettuce.core.StreamMessage;
 import io.lettuce.core.XReadArgs;
 import io.lettuce.core.api.reactive.RedisReactiveCommands;
 
+import java.util.Map;
+
 abstract class BaseWorker {
     protected final int id;
     private final Gson gson;
@@ -25,10 +27,6 @@ abstract class BaseWorker {
         this.workerConfig = workerConfig;
     }
 
-    private Entry parseJson(String message) {
-        return gson.fromJson(message, Entry.class);
-    }
-
     public abstract Entry handleMessage(Entry message);
 
     public void start() {
@@ -42,16 +40,9 @@ abstract class BaseWorker {
 //                    workerConfig.messagesBacklogStreamKey(), workerConfig.consumerGroupName(), message.getId()
 //                )
 //                .map($ -> message))
-            .doOnNext(message -> System.out.println("Parsing " + message.getBody()))
-//            .map(StreamMessage::getBody)
-//            .filter(body -> !body.isEmpty() && body.get("message") != null)
-//            .map(body -> {
-//                Entry entry = this.parseJson(body.get("message"));
-//
-//                return this.handleMessage(entry);
-//            })
-//            .flatMap(result -> redisReactiveClient
-//                .xadd(workerConfig.processedMessagesStreamKey(), "processed", gson.toJson(result)))
+            .map(StreamMessage::getBody)
+            .filter(body -> !body.isEmpty() && body.get("message") != null)
+            .map(this::processAndReport)
             .doOnError(ex -> {
                 System.out.printf("Worker %d failed. Exiting...", this.id);
 
@@ -61,6 +52,18 @@ abstract class BaseWorker {
             })
             .repeat()
             .subscribe();
+    }
+
+    private Entry processAndReport(Map<String, String> body) {
+        Entry entry = this.parseJson(body.get("message"));
+
+        Entry result = this.handleMessage(entry);
+
+        redisReactiveClient
+            .xadd(workerConfig.processedMessagesStreamKey(), "processed", gson.toJson(result))
+            .subscribe();
+
+        return result;
     }
 
     protected void registerWorkerInRedis() {
@@ -77,5 +80,9 @@ abstract class BaseWorker {
 
     private String getConsumerName() {
         return String.format("%s-%s", workerConfig.consumerGroupName(), this.id);
+    }
+
+    private Entry parseJson(String message) {
+        return gson.fromJson(message, Entry.class);
     }
 }
