@@ -29,8 +29,8 @@ public class MonitoringMain {
                 Range<String> range = Range.create("" + from, "" + to);
 
                 return baseReactive
-                        .xrange(config.processedMessageStreamKey(), range)
-                        .count();
+                    .xrange(config.processedMessageStreamKey(), range)
+                    .count();
             })
             .doOnNext(count -> System.out.printf("Parsed messages per second for last 3 seconds %.2f%n", count / 3.0))
             .subscribe();

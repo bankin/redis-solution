@@ -11,15 +11,14 @@ public class Worker extends BaseWorker {
     private final static Random rand = new Random();
 
     public Worker(
+        int id,
         Gson gson,
         RedisReactiveCommands<String, String> redisListClient,
         WorkerConfig workerConfig
     ) {
-        super(gson, redisListClient, workerConfig);
+        super(id, gson, redisListClient, workerConfig);
 
-        redisListClient
-            .rpush(workerConfig.activeConsumersListKey(), "" + super.id)
-            .subscribe();
+        registerWorkerInRedis();
     }
 
     @Override

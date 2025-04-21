@@ -6,10 +6,7 @@ import com.solution.config.ConsumerConfig;
 import com.solution.config.RedisConfig;
 import com.solution.config.WorkerConfig;
 import com.solution.worker.Worker;
-import io.lettuce.core.Consumer;
-import io.lettuce.core.RedisClient;
-import io.lettuce.core.RedisURI;
-import io.lettuce.core.XReadArgs;
+import io.lettuce.core.*;
 import io.lettuce.core.api.reactive.RedisReactiveCommands;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -35,13 +32,8 @@ public class WorkerMain {
 
         createConsumerGroup(baseReactive, workerConfig.messagesBacklogStreamKey(), workerConfig.consumerGroupName())
             .flatMapMany($ -> Flux.range(1, config.consumerCount()))
-            .flatMap(id ->
-                baseReactive
-                    .xgroupCreateconsumer(
-                        workerConfig.messagesBacklogStreamKey(),
-                        Consumer.from(workerConfig.consumerGroupName(), "main-consumers-" + id)
-                    )
-                    .doOnNext($ -> new Worker(gson, baseReactive, workerConfig).start()))
+            .map(id -> new Worker(id, gson, baseReactive, workerConfig))
+            .map(worker -> Thread.ofVirtual().start(worker::start))
             .subscribe();
     }
 
@@ -49,10 +41,9 @@ public class WorkerMain {
             RedisReactiveCommands<String, String> baseReactive,
             String streamKey,
             String consumerGroupName) {
-        return baseReactive.xgroupDestroy(streamKey, consumerGroupName)
-            .flatMap($ ->
-                baseReactive.xgroupCreate(XReadArgs.StreamOffset.latest(streamKey), consumerGroupName, mkstream())
-            );
+        return baseReactive.xgroupCreate(XReadArgs.StreamOffset.latest(streamKey), consumerGroupName, mkstream())
+            .doOnError(RedisBusyException.class, ex -> System.out.println("Group Already Exists"))
+            .onErrorResume(RedisBusyException.class, ($) -> Mono.just("OK"));
     }
 
     private static ConsumerConfig readConfig() {
