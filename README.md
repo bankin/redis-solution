@@ -102,6 +102,8 @@ messages and registering multiple consumers relatively easy passing the sync
 task back to Redis. I had tons of issues (mostly due to my lack
 of knowledge on how to use it properly) with reading the stream, staying
 alive for new "events" and general errors overall
+- Each module is intended to work autonomously and has its own redis 
+connection setup
 
 ## Improvements
 

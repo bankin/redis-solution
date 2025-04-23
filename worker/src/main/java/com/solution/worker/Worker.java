@@ -13,12 +13,12 @@ public class Worker extends BaseWorker {
     public Worker(
         int id,
         Gson gson,
-        RedisReactiveCommands<String, String> redisListClient,
+        RedisReactiveCommands<String, String> reactiveClient,
         WorkerConfig workerConfig
     ) {
-        super(id, gson, redisListClient, workerConfig);
+        super(id, gson, reactiveClient, workerConfig);
 
-        registerWorkerInRedis();
+        registerWorkerInRedis().subscribe();
     }
 
     @Override

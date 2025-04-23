@@ -39,8 +39,7 @@ public class WorkerMain {
 
         createConsumerGroup(baseReactive, workerConfig.messagesBacklogStreamKey(), workerConfig.consumerGroupName())
             .flatMapMany($ -> Flux.range(1, config.consumerCount()))
-            .doOnNext(id -> new Worker(id, gson, baseReactive, workerConfig).start())
-//            .map(worker -> Thread.ofVirtual().start(worker::start))
+            .flatMap(id -> new Worker(id, gson, baseReactive, workerConfig).start())
             .subscribe();
     }
 
@@ -57,7 +56,7 @@ public class WorkerMain {
         String host = env.get("REDIS_HOST", "localhost");
         int port = Integer.parseInt(env.get("REDIS_PORT", "6379"));
 
-        int consumerCount = Integer.parseInt(env.get("SOLUTION_CONSUMER_COUNT", "1"));
+        int consumerCount = Integer.parseInt(env.get("SOLUTION_CONSUMER_COUNT", "2"));
         String activeConsumersListKey = env.get("SOLUTION_ACTIVE_CONSUMERS_LIST_KEY", "consumer:ids");
         String processedMessagesStreamKey = env.get("SOLUTION_PROCESSED_MESSAGES_STREAM_KEY", "messages:processed");
 
